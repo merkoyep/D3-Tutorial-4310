@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script>
+      const generateData = (number) => {
+        const data = [];
+        for (let i = 0; i < number; i += 1) {
+          data.push(Math.random() * 10);
+        }
+        return data;
+      };
+      const data = generateData(10);
+      const maxData = Math.max(...data.map((item) => item));
+      const normalizedData = data.map((item) => item / maxData);
+      d3.select('body')
+        .selectAll('div')
+        .data(normalizedData)
+        .enter()
+        .append('div')
+        .text((d) => `$${d.toFixed(2)}`)
+        .style('padding', '1em')
+        .style('background-color', 'red')
+        .style('margin', '1px')
+        .style('width', (d) => `${(d / 10) * 100}%`)
+        .style('background-image', 'linear-gradient(to left, #e66465, #9198e5)')
+        .style('color', '#fff')
+        .style('font-family', 'Helvetica')
+        .style('opacity', (d) => `${d}`);
+    </script>
+  </body>
+</html>

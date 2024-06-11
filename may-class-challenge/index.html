@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <svg id="svg" width="800" height="800"></svg>
+
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script>
+      d3.csv('sdg.csv').then((data) => {
+        const filterdData = data.filter((d) => parseFloat(d.year) > 2021);
+        const countries = Array.from(
+          new Set(filterdData.map((d) => d.country_code))
+        );
+        const minX = d3.min(filterdData, (d) => parseFloat(d.goal_1_score));
+        const maxX = d3.max(filterdData, (d) => parseFloat(d.goal_1_score));
+        const minY = d3.min(filterdData, (d) => parseFloat(d.goal_4_score));
+        const maxY = d3.max(filterdData, (d) => parseFloat(d.goal_4_score));
+
+        const xScale = d3.scaleLinear().domain([minX, maxX]).range([0, 600]);
+
+        const yScale = d3.scaleLinear().domain([minY, maxY]).range([800, 0]);
+
+        const countryScale = d3
+          .scaleOrdinal()
+          .domain(countries)
+          .range(['cornflowerblue', 'blue', 'red', 'tomato', 'green']);
+
+        const popScale = d3
+          .scaleSqrt()
+          .domain(d3.extent(filterdData, (d) => d.population))
+          .range([20, 200]);
+
+        const node = d3
+          .select('#svg')
+          .style('border', '1px solid')
+          .selectAll('g') // Select all groups
+          .data(filterdData)
+          .enter();
+
+        const groups = node.append('g');
+
+        groups
+          .append('circle')
+          .attr('cx', (d) => xScale(d.goal_1_score))
+          .attr('cy', (d) => yScale(d.goal_4_score))
+          .attr('r', '3px')
+          .attr('opacity', 0.25)
+          .attr('fill', (d) => countryScale(d.country));
+
+        groups
+          .append('text')
+          .text((d) => d.country)
+          .attr('x', (d) => xScale(d.goal_1_score))
+          .attr('y', (d) => yScale(d.goal_4_score))
+          .style('font-size', '18px');
+      });
+    </script>
+  </body>
+</html>

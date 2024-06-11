@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>City Populations as a Bar Graph</title>
+    <style>
+      body,
+      html {
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #svg {
+        border: 1px solid;
+      }
+    </style>
+  </head>
+  <body>
+    <svg id="svg" width="600" height="300"></svg>
+
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script>
+      const getCityData = (data) => {
+        return data;
+      };
+      const handleData = (data) => {
+        const margin = { top: 10, right: 10, bottom: 20, left: 40 };
+        const width = 600 - (margin.left + margin.right);
+        const height = 300 - (margin.top + margin.bottom);
+
+        const xScale = d3
+          .scaleBand()
+          .domain(data.map((d) => d.label))
+          .range([margin.left, width + margin.left])
+          .padding(0.05);
+
+        data.forEach((d) => {
+          d.population = +d.population;
+        });
+
+        const popExtent = d3.extent(data, (d) => d.population);
+
+        const yScale = d3
+          .scaleLinear()
+          .domain(popExtent)
+          .range([height, margin.top]);
+
+        const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+        const svg = d3.select('#svg');
+
+        const bottomAxis = d3.axisBottom(xScale);
+
+        svg
+          .append('g')
+          .attr('transform', `translate(${0}, ${height})`)
+          .call(bottomAxis);
+
+        const leftAxis = d3
+          .axisLeft(yScale)
+          .tickFormat(d3.format('.2s'))
+          .ticks(12)
+          .tickSize(-width)
+          .tickValues([1000000, 5000000, 10000000, 15000000]);
+
+        svg
+          .append('g')
+          .attr('transform', `translate(${margin.left}, 0)`)
+          .call(leftAxis);
+
+        const barGroup = svg.append('g');
+
+        barGroup
+          .selectAll('rect')
+          .data(data)
+          .enter()
+          .append('rect')
+          .attr('class', 'bar')
+          .attr('x', (d, i) => xScale(d.label))
+          .attr('y', (d) => yScale(d.population))
+          .attr('width', xScale.bandwidth())
+          .attr('height', (d) => height - yScale(d.population))
+          .attr('fill', (d) => colorScale(d.population));
+      };
+      d3.csv('../data/cities.csv').then(handleData);
+    </script>
+  </body>
+</html>

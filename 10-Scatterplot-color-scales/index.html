@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Precipitation as a Scatter Plot</title>
+    <style>
+      body,
+      html {
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #svg {
+        border: 1px solid;
+      }
+    </style>
+  </head>
+  <body>
+    <svg id="svg" width="600" height="400"></svg>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script>
+      const getDataForState = (data, state) => {
+        const arr = data
+          .filter((d) => d.state === state)
+          .filter((d) => !isNaN(d.precipitation))
+          .map((d) => {
+            d.precipitation = parseFloat(d.precipitation);
+            return d;
+          });
+        return arr;
+      };
+      const handleData = (data) => {
+        const width = 600;
+        const height = 400;
+        const margin = 40;
+        const baData = getDataForState(data, 'BA');
+        const parseTime = d3.timeParse('%d/%m/%Y');
+        baData.forEach((d) => (d.date = parseTime(d.date)));
+        const dateExtent = d3.extent(baData, (d) => d.date);
+        const precipitationExtent = d3.extent(baData, (d) => d.precipitation);
+
+        const xScale = d3
+          .scaleTime()
+          .domain(dateExtent)
+          .range([margin, width - margin])
+          .nice();
+
+        const yScale = d3
+          .scaleLinear()
+          .domain(precipitationExtent)
+          .range([height - margin, margin]);
+
+        const circleScale = d3
+          .scaleSqrt()
+          .domain(precipitationExtent)
+          .range([2, 15]);
+
+        const linegen = d3
+          .line()
+          .x((d, i) => xScale(d.date))
+          .y((d) => yScale(d.precipitation))
+          .curve(d3.curveLinear);
+
+        const svg = d3.select('#svg');
+
+        const graph = svg.append('g');
+
+        graph
+          .append('path')
+          .attr('d', linegen(baData))
+          .attr('stroke-width', 2)
+          .attr('stroke', 'cornflowerblue')
+          .attr('fill', 'none');
+
+        svg
+          .append('g')
+          .selectAll('circle')
+          .data(baData)
+          .enter()
+          .append('circle')
+          .attr('cx', (d) => xScale(d.date))
+          .attr('cy', (d) => yScale(d.precipitation))
+          .attr('r', (d) => circleScale(d.precipitation))
+          .attr('fill', 'rgba(255, 0, 0, 0.2)');
+      };
+
+      d3.csv('../data/precipitation.csv').then(handleData);
+    </script>
+  </body>
+</html>

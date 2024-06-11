@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <svg id="svg" width="500" height="500">
+      <circle cx="250" cy="250" r="123" fill="#0ff" />
+      <circle cx="400" cy="400" r="75" fill="#ff0" />
+      <circle cx="100" cy="400" r="150" fill="#f0f" />
+    </svg>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script>
+      function makeRandomData(n) {
+        const array = [];
+        for (let i = 0; i < n; i += 1) {
+          array.push({ a: Math.random(), b: Math.random(), c: Math.random() });
+        }
+        return array;
+      }
+      const data = makeRandomData(11);
+      d3.select('#svg')
+        .style('border', '1px solid')
+        .selectAll('ellipse')
+        .data(data)
+        .enter()
+        .append('ellipse')
+        .attr('cx', (d, i) => (i * 500) / data.length)
+        .attr('cy', (d) => d.a * 500)
+        .attr('rx', (d) => d.b * 50)
+        .attr('ry', (d) => d.c * 50)
+        .attr('fill', (d) => `hsl(${360 * d.b}, 100%, 50%)`)
+        .attr('opacity', () => 0.5)
+        .attr('stroke', '#000')
+        .attr('stroke-width', (d) => 10 * d.b)
+        .attr('stroke-color', `hsl(${360 * d.b}, 100%, 50%)`);
+    </script>
+  </body>
+</html>
