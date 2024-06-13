@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Weather in india as an Area graph</title>
+    <style>
+      #svg {
+        border: 1px solid;
+      }
+    </style>
+  </head>
+  <body>
+    <svg id="svg" width="600" height="400"></svg>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script>
+      const width = 600;
+      const height = 300;
+      const margin = 40;
+
+      const convertToArray = (obj) => {
+        const months = [
+          'JAN',
+          'FEB',
+          'MAR',
+          'APR',
+          'MAY',
+          'JUN',
+          'JUL',
+          'AUG',
+          'SEP',
+          'OCT',
+          'NOV',
+          'DEC',
+        ];
+        return months.map((month) => {
+          const temp = parseFloat(obj[month]);
+          return { month: month, temp };
+        });
+      };
+      async function handleData() {
+        const data = await d3.csv('../data/weatherIndia.csv');
+        const year_1901 = data[0];
+        const year_1902 = data[1];
+        const year_1903 = data[2];
+        const months_1901 = convertToArray(year_1901);
+        const months_1902 = convertToArray(year_1902);
+        const months_1903 = convertToArray(year_1903);
+        const tempExtent = d3.extent(data, (d) => d.temp);
+        const xScale = d3
+          .scaleLinear()
+          .domain([0, months_1901.length - 1])
+          .range([margin, width - margin]);
+        const yScale = d3
+          .scaleLinear()
+          .domain(d3.extent(months_1901, (d) => d.temp))
+          .range([height - margin, margin]);
+        const monthScale = d3
+          .scaleTime()
+          .domain([new Date('1901-01-01'), new Date('1901-12-01')])
+          .range([margin, width - margin])
+          .nice();
+
+        const colorScale = d3
+          .scaleSequential()
+          .domain(
+            d3.extent(
+              months_1901.concat(months_1902, months_1903),
+              (d) => d.temp
+            )
+          )
+          .interpolator(d3.interpolateCool);
+        const svg = d3.select('#svg');
+        const graph_1901 = svg.append('g');
+        const graph_1902 = svg.append('g');
+        const graph_1903 = svg.append('g');
+        const linegen = d3
+          .area()
+          .x((d, i) => xScale(i))
+          .y0((d) => yScale(d.temp))
+          .y1(height - margin)
+          .curve(d3.curveBasis);
+
+        const bottomAxis = d3.axisBottom(monthScale);
+        const leftAxis = d3.axisLeft(yScale);
+        // Create the bottom axis
+        svg
+          .append('g')
+          .attr('transform', `translate(0, ${height - margin})`)
+          .call(bottomAxis);
+        // Create the left axis
+        svg
+          .append('g')
+          .attr('transform', `translate(${margin}, 0)`)
+          .call(leftAxis);
+
+        graph_1901
+          .append('path')
+          .attr('d', linegen(months_1901))
+          .attr('stroke-width', 1)
+          .attr('stroke', 'cornflowerblue')
+          .attr('fill', (d) => colorScale(d3.max(months_1901, (d) => d.temp)));
+
+        graph_1902
+          .append('path')
+          .attr('d', linegen(months_1902))
+          .attr('stroke-width', 1)
+          .attr('stroke', 'cornflowerblue')
+          .attr('fill', (d) => colorScale(d3.mean(months_1902, (d) => d.temp)));
+
+        graph_1903
+          .append('path')
+          .attr('d', linegen(months_1903))
+          .attr('stroke-width', 1)
+          .attr('stroke', 'cornflowerblue')
+          .attr('fill', (d) => colorScale(d3.min(months_1903, (d) => d.temp)));
+      }
+      handleData();
+    </script>
+  </body>
+</html>

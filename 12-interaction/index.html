@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Weather in india using Interaction</title>
+    <style>
+      /* Put the box in the center of the page */
+      body,
+      html {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #svg {
+        border: 1px solid;
+      }
+
+      select {
+        font-size: 1rem;
+        margin: 1rem 0;
+        align-self: flex-end;
+      }
+    </style>
+  </head>
+  <body>
+    <svg id="svg" width="600" height="400"></svg>
+    <select id="year-select"></select>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script>
+      const width = 600;
+      const height = 300;
+      const margin = 40;
+      const convertToArray = (obj) => {
+        const months = [
+          'JAN',
+          'FEB',
+          'MAR',
+          'APR',
+          'MAY',
+          'JUN',
+          'JUL',
+          'AUG',
+          'SEP',
+          'OCT',
+          'NOV',
+          'DEC',
+        ];
+        return months.map((month) => {
+          const temp = parseFloat(obj[month]);
+          return { month: month, temp };
+        });
+      };
+      const years = Array.from({ length: 2017 - 1901 + 1 }, (_, i) => ({
+        value: i,
+        year: 1901 + i,
+      }));
+
+      const select = d3.select('#year-select');
+
+      select
+        .selectAll('option')
+        .data(years)
+        .enter()
+        .append('option')
+        .attr('value', (d) => d.value)
+        .text((d) => d.year);
+
+      async function handleData() {
+        const data = await d3.csv('../data/weatherIndia.csv');
+        const year_1901 = data[0];
+        const allTemperatures = data.flatMap((d) =>
+          Object.keys(d)
+            .slice(2)
+            .map((key) => parseFloat(d[key]))
+        );
+        const tempExtent = d3.extent(allTemperatures);
+        const months_1901 = convertToArray(year_1901);
+        const xScale = d3
+          .scaleLinear()
+          .domain([0, 11])
+          .range([margin, width - margin]);
+        const yScale = d3
+          .scaleLinear()
+          .domain(tempExtent)
+          .range([height - margin, margin]);
+        const monthScale = d3
+          .scaleTime()
+          .domain([new Date('1901-01-01'), new Date('1901-12-01')])
+          .range([margin, width - margin])
+          .nice();
+        const colorScale = d3
+          .scaleSequential()
+          .domain(d3.extent(months_1901, (d) => d.temp))
+          .interpolator(d3.interpolateCool);
+        const svg = d3.select('#svg');
+        const graph_1901 = svg.append('g');
+        const linegen = d3
+          .area()
+          .x((d, i) => xScale(i))
+          .y0((d) => yScale(d.temp))
+          .y1(height - margin)
+          .curve(d3.curveBasis);
+        const bottomAxis = d3.axisBottom(monthScale);
+        const leftAxis = d3.axisLeft(yScale);
+
+        document.querySelector('select').addEventListener('change', (e) => {
+          const index = parseInt(e.target.value);
+          const hue = (360 / 12) * index; // data.length
+          const fillColor = `hsla(${hue}, 100%, 50%, 0.33)`;
+          // Update the path here!
+          path
+            .transition()
+            .duration(800)
+            .ease(d3.easeElasticOut)
+            .attr('d', linegen(convertToArray(data[index])))
+            .attr('fill', fillColor);
+        });
+
+        svg
+          .append('g')
+          .attr('transform', `translate(0, ${height - margin})`)
+          .call(bottomAxis);
+
+        svg
+          .append('g')
+          .attr('transform', `translate(${margin}, 0)`)
+          .call(leftAxis);
+
+        const path = graph_1901
+          .append('path')
+          .attr('d', linegen(months_1901))
+          .attr('stroke-width', 1)
+          .attr('stroke', 'cornflowerblue')
+          .attr('fill', (d) => colorScale(d3.max(months_1901, (d) => d.temp)));
+      }
+      handleData();
+    </script>
+  </body>
+</html>
