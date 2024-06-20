@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>City populations using hiearchy</title>
+    <style>
+      body,
+      html {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #svg {
+        border: 1px solid;
+      }
+
+      select {
+        font-size: 1rem;
+        margin: 1rem 0;
+        align-self: flex-end;
+      }
+    </style>
+  </head>
+  <body>
+    <svg id="svg" width="600" height="600"></svg>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script>
+      async function handleData() {
+        const data = await d3.csv('../data/cities.csv');
+        const byCountry = {
+          name: 'root',
+          label: 'world',
+          children: [],
+          population: data.reduce((acc, d) => parseInt(d.population) + acc, 0),
+        };
+        const countryNames = Array.from(new Set(data.map((d) => d.country)));
+        countryNames.forEach((d) => {
+          const cities = data.filter((c) => c.country === d);
+          const pop = cities.reduce(
+            (acc, d) => parseInt(d.population) + acc,
+            0
+          );
+          byCountry.children.push({
+            label: d,
+            population: pop,
+            children: cities,
+          });
+        });
+        console.log(byCountry);
+
+        const root = d3.hierarchy(byCountry);
+
+        root.sum((d) => {
+          return d.population;
+        });
+
+        const pack = d3.pack().size([500, 500]).padding(2);
+
+        const rootNode = pack(root);
+
+        const num_f = d3.format('.2s');
+
+        const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+        const nodes = d3
+          .select('#svg')
+          .selectAll('g')
+          .data(rootNode.descendants())
+          .join('g')
+          .attr('transform', (d) => `translate(${d.x}, ${d.y})`);
+
+        nodes
+          .append('circle')
+          .attr('r', (d) => d.r)
+          .attr('fill', (d) => {
+            if (d.data.country === undefined) {
+              return colorScale(d.data.label);
+            }
+            return colorScale(d.data.country);
+          })
+          .attr('opacity', '0.5');
+
+        nodes
+          .append('text')
+          .text((d) => `${num_f(d.data.population)}`)
+          .attr('font-family', 'Helvetica')
+          .style('text-anchor', 'middle')
+          .style('alignment-baseline', 'middle')
+          .style('fill', 'white')
+          .attr('transform', 'translate(0, -8)');
+
+        nodes
+          .append('text')
+          .text((d) => `${d.data.label}`)
+          .attr('font-family', 'Helvetica')
+          .style('text-anchor', 'middle')
+          .style('alignment-baseline', 'middle')
+          .style('fill', 'white')
+          .attr('transform', 'translate(0,8)')
+          .style('fill', (d) => {
+            if (d.data.country === undefined) {
+              return 'black';
+            }
+            return 'white';
+          })
+          .attr('transform', (d) => {
+            if (d.data.country === undefined) {
+              return `translate(0, -${d.r})`;
+            }
+          });
+        // data.forEach((d) => (d.population = +d.population));
+        // const nestedData = d3.group(data, (d) => country);
+        // const hierarchyData = {
+        //   name: 'root',
+        //   children: Array.from(nestedData, ([country, cities]) => {
+        //     const totalPopulation = d3.sum(value, (d) => d.population);
+        //     return {
+        //       name: country,
+        //       population: totalPopulation,
+        //       children: cities.map((city) => ({
+        //         label: city.city,
+        //         population: city.population,
+        //         x: city.x,
+        //         y: city.y,
+        //       })),
+        //     };
+        //   }),
+        // };
+
+        const width = 600;
+        const height = 600;
+        const margin = 40;
+        //     const colorScale = d3
+        //       .scaleSequential()
+        //       .domain([0, data.length])
+        //       .interpolator(d3.interpolateRainbow);
+      }
+      handleData();
+    </script>
+  </body>
+</html>

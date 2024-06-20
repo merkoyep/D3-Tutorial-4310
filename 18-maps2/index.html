@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Maps</title>
+    <style>
+      body,
+      html {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #svg {
+        border: 1px solid;
+      }
+
+      select {
+        font-size: 1rem;
+        margin: 1rem 0;
+        align-self: flex-end;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/topojson@3"></script>
+    <script>
+      const width = 950;
+      const height = 500;
+      const svg = d3
+        .select('body')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+
+      const g = svg.append('g');
+
+      const projection = d3.geoMercator().scale(150).rotate([0, 0]);
+      const path = d3.geoPath().projection(projection);
+      const colorScale = d3
+        .scaleSequential()
+        .interpolator(d3.interpolateRainbow)
+        .domain([0, 176]);
+
+      async function loadMap() {
+        const earthquakeData = await d3.csv('earthquake.csv');
+        const data = earthquakeData.filter((d) => d.Magnitude > 7);
+        const topology = await d3.json('world-110m2.json');
+        g.selectAll('path')
+          .data(topojson.feature(topology, topology.objects.countries).features)
+          .enter()
+          .append('path')
+          .attr('d', path)
+          .attr('fill', (d, i) => colorScale(i))
+          .attr('stroke', 'white')
+          .attr('stroke-width', 0.25);
+
+        // add a circle for each earthquak in data
+        d3.select('svg')
+          .selectAll('circle')
+          .data(data)
+          .enter()
+          .append('circle')
+          // Position the circles using geo coords and porjection
+          .attr('cx', (d) => projection([d.Longitude, d.Latitude])[0])
+          .attr('cy', (d) => projection([d.Longitude, d.Latitude])[1])
+          // Style the circles
+          .attr('r', 10)
+          .attr('fill', 'rgba(255, 0, 0, 0.15)');
+      }
+      loadMap();
+    </script>
+  </body>
+</html>
